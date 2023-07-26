@@ -16,6 +16,12 @@ def protect_firmware(infile, outfile, version, message):
     with open(infile, 'rb') as fp:
         firmware = fp.read()
 
+    #Load keys from secret_build_output.txt
+        with open("secret_build_output.txt", "rb") as file:
+        aes_key = readline().strip()
+        iv = readline().strip()
+        hmac = readline().strip()
+
     # Append null-terminated message to end of firmware
     firmware_and_message = firmware + message.encode() + b'\00'
 

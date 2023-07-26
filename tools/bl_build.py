@@ -14,9 +14,25 @@ import os
 import pathlib
 import shutil
 import subprocess
+import secrets
 
 REPO_ROOT = pathlib.Path(__file__).parent.parent.absolute()
 BOOTLOADER_DIR = os.path.join(REPO_ROOT, "bootloader")
+
+
+def generate_secrets():
+    # Generate AES-128 secret keys and IVs
+    aes_key = secrets.token_bytes(16)
+    aes_iv = secrets.token_bytes(16)
+    hmac_key = secrets.token_bytes(32)
+    # ecc_key = secrets.token_bytes(32)
+
+    # Write the secret keys and IVs to the output file
+    with open("secret_build_output.txt", "wb") as file:
+        file.write(aes_key + b"\n")
+        file.write(aes_iv + b"\n")
+        file.write(hmac_key + b"\n")
+        # file.write(ecc_key + b"\n")
 
 
 def copy_initial_firmware(binary_path: str):
@@ -26,13 +42,15 @@ def copy_initial_firmware(binary_path: str):
     shutil.copy(binary_path, os.path.join(BOOTLOADER_DIR, "src/firmware.bin"))
 
 
-def make_bootloader() -> bool:
+def make_bootloader(aes, iv, hmac) -> bool:
     # Build the bootloader from source.
 
     os.chdir(BOOTLOADER_DIR)
 
+    # Running the make command with the provided secrets as command-line arguments
+    make_cmd = f"make AES_KEY={aes} IV={iv} HMAC_KEY={hmac}"
     subprocess.call("make clean", shell=True)
-    status = subprocess.call("make")
+    status = subprocess.call(make_cmd, shell=True)
 
     # Return True if make returned 0, otherwise return False.
     return status == 0
@@ -53,5 +71,18 @@ if __name__ == "__main__":
             f'ERROR: {firmware_path} does not exist or is not a file. You may have to call "make" in the firmware directory.'
         )
 
+    generate_secrets()
+
+    # Read secrets from the output file
+    with open("secret_build_output.txt", "rb") as file:
+        lines = file.readlines()
+        aes_key = lines[0].strip()
+        iv = lines[1].strip()
+        hmac = lines[2].strip()
+
     copy_initial_firmware(firmware_path)
-    make_bootloader()
+    # Building the bootloader with the secrets as command-line arguments
+    if make_bootloader(aes_key, iv, hmac):
+        print("Bootloader built successfully.")
+    else:
+        print("Bootloader build failed.")
