@@ -11,30 +11,21 @@ import argparse
 import struct
 from Crypto.Hash import HMAC, SHA256
 
-
-#wip?
-# def hmac_generate(firmware):
-#     with open('secret_build_output.bin', 'rb') as file:
-#         text = file.readlines()
-#     key = text[2]
-#     h = HMAC.new(key, digestmod=SHA256)
-#     h.update(firmware)
-#     hmac = h.digest()
-#     return hmac
-
-
-
 def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile
     with open(infile, 'rb') as fp:
         firmware = fp.read()
 
+    #Load keys from secret_build_output.txt
+    with open("secret_build_output.txt", "rb") as file:
+        aes_key = readline().strip()
+        iv = readline().strip()
+        hmac = readline().strip()
     # Append null-terminated message to end of firmware
     firmware_and_message = firmware + message.encode() + b'\00'
 
     # Pack version and size into two little-endian shorts
     metadata = struct.pack('<HH', version, len(firmware))
-
 
     # Append firmware and message to metadata
     firmware_blob = metadata + firmware_and_message
