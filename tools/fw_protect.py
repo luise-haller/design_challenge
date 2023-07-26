@@ -22,15 +22,17 @@ def protect_firmware(infile, outfile, version, message):
     original_hash = SHA256.new(firmware)
 
     #Load keys from secret_build_output.txt
-        with open("secret_build_output.txt", "rb") as file:
-        aes_key = readline().strip()
-        iv = readline().strip()
-        hmac = readline().strip()
+    with open("secret_build_output.txt", "rb") as file:
+        aes_key = file.readline().strip()
+        iv = file.readline().strip()
+        hmac = file.readline().strip()
         
     # Create cipher and hash    
     cipher = AES.new(aes_key, AES.MODE_GCM, nonce = iv)
     cipher.encrypt(firmware)
     encrypted_hash = SHA256.new(firmware)
+    print(firmware)
+    print(encrypted_hash)
         
     # Append null-terminated message to end of firmware
     firmware_and_message = firmware + message.encode() + b'\00'
