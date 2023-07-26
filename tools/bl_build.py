@@ -14,6 +14,8 @@ import os
 import pathlib
 import shutil
 import subprocess
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 
 REPO_ROOT = pathlib.Path(__file__).parent.parent.absolute()
 BOOTLOADER_DIR = os.path.join(REPO_ROOT, "bootloader")
@@ -24,6 +26,14 @@ def copy_initial_firmware(binary_path: str):
 
     os.chdir(os.path.join(REPO_ROOT, "tools"))
     shutil.copy(binary_path, os.path.join(BOOTLOADER_DIR, "src/firmware.bin"))
+    
+def write_keys():
+    # Generate AES key and write it to secret build output + main.axf
+    key = get_random_bytes(16)
+    with open("./secret_build_output.txt", "wb") as f:   
+        f.write(key)
+    # with open("./main.axf", "wb") as f:   
+    #     f.write(key)
 
 
 def make_bootloader() -> bool:
@@ -53,5 +63,6 @@ if __name__ == "__main__":
             f'ERROR: {firmware_path} does not exist or is not a file. You may have to call "make" in the firmware directory.'
         )
 
+    write_keys()
     copy_initial_firmware(firmware_path)
     make_bootloader()

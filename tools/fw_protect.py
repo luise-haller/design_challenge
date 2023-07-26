@@ -9,6 +9,7 @@ Firmware Bundle-and-Protect Tool
 """
 import argparse
 import struct
+from Crypto.Cipher import AES
 
 
 def protect_firmware(infile, outfile, version, message):
