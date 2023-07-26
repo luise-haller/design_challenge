@@ -56,11 +56,13 @@ unsigned char data[FLASH_PAGESIZE];
 
 int main(int argc, char* argv[]){
     // Check if enough command-line arguments are provided
-    if (argc != 4) {
+    /*if (argc != 4) {
         // Print an error message and exit if secrets are missing
+
         fprintf(stderr, "Usage: %s <aes> <iv> <hmac> \n", argv[0]);
         return 1;
-    }
+    }*/
+    
 
     // Copy the secrets from command-line arguments to local variables (arrays)
     char aes_key[17];
