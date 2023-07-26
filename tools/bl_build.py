@@ -25,14 +25,14 @@ def generate_secrets():
     aes_key = secrets.token_bytes(16)
     aes_iv = secrets.token_bytes(16)
     hmac_key = secrets.token_bytes(32)
-    #ecc_key = secrets.token_bytes(32)
+    # ecc_key = secrets.token_bytes(32)
 
     # Write the secret keys and IVs to the output file
     with open("secret_build_output.txt", "wb") as file:
-        file.write(f"{aes_key}\n")
-        file.write(f"{aes_iv}n")
-        file.write(f"{hmac_key}\n")
-        # file.write(f"{ecc_key}\n")
+        file.write(aes_key + b"\n")
+        file.write(aes_iv + b"\n")
+        file.write(hmac_key + b"\n")
+        # file.write(ecc_key + b"\n")
 
 
 def copy_initial_firmware(binary_path: str):
@@ -74,11 +74,11 @@ if __name__ == "__main__":
     generate_secrets()
 
     # Read secrets from the output file
-    with open("secret_build_output.txt", "r") as file:
+    with open("secret_build_output.txt", "rb") as file:
         lines = file.readlines()
         aes_key = lines[0].strip()
         iv = lines[1].strip()
-        hmac = lines[2]strip()
+        hmac = lines[2].strip()
 
     copy_initial_firmware(firmware_path)
     # Building the bootloader with the secrets as command-line arguments
