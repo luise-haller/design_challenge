@@ -37,6 +37,22 @@ def make_bootloader() -> bool:
     # Return True if make returned 0, otherwise return False.
     return status == 0
 
+def generate_keys():
+    # Generates required keys for AES
+
+    aes_key = get_random_bytes(16) #Generates 16 bytes = 128 bits for AES-128
+    iv = get_random_bytes(16) # Generates 16 bytes IV for AES-128
+
+    hmac_key = get_random_bytes(32) # Generates 256 bit HMAC key for SHA-256
+
+    #ecc_key = get_random_bytes(16) # Generates 128 bit ECC key
+
+    with open('secret_buid_output.txt', 'wb') as secrets: #
+        secrets.write(hmac_key + aes_key + iv) # writes keys into sbo.txt
+
+        # secrets.write('\n' + ecc_key) # Writes ecc key
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Bootloader Build Tool")
@@ -55,3 +71,5 @@ if __name__ == "__main__":
 
     copy_initial_firmware(firmware_path)
     make_bootloader()
+    generate_keys()
+

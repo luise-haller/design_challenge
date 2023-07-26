@@ -16,6 +16,16 @@ def protect_firmware(infile, outfile, version, message):
     with open(infile, 'rb') as fp:
         firmware = fp.read()
 
+    # Reads secret keys
+    with open('secret_build_output.txt', 'rb') as secrets:
+        hmac_key = secrets.read(32) # Reads 256 bit HMAC key
+        aes_key = secrets.read(16)  # Reads 16 bytes = 128 bits for AES-128
+        iv = secrets.read(16) # Reads 16 bytes IV for AES-128
+
+    cipher = AES.new(aes_key, AES.MODE_GCM, nonce=iv) #initialize AES-GCM-128 cipher
+    # Encrypts data
+
+
     # Append null-terminated message to end of firmware
     firmware_and_message = firmware + message.encode() + b'\00'
 
