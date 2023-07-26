@@ -54,33 +54,24 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len);
 // Firmware Buffer
 unsigned char data[FLASH_PAGESIZE];
 
-// Define preproccessor macros for secrets
-#define SECRET_KEY_1 "my_secret_key1"
-#define SECRET_KEY_2 "my_secret_key2"
-#define IV_1 "my_iv1"
-#define IV_2 "my_iv2"
-
 int main(int argc, char* argv[]){
     // Check if enough command-line arguments are provided
-    if (argc < 5) {
+    if (argc != 4) {
         // Print an error message and exit if secrets are missing
-        fprintf(stderr, "Usage: %s <secret1> <secret2> <iv1> <iv2>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <aes> <iv> <hmac> \n", argv[0]);
         return 1;
     }
 
     // Copy the secrets from command-line arguments to local variables (arrays)
-    char secret_key1[17];
-    char secret_key2[17];
-    char iv1[17];
-    char iv2[17];
-    strncpy(secret_key1, argv[1], 16);
-    strncpy(secret_key2, argv[2], 16);
-    strncpy(iv1, argv[3], 16);
-    strncpy(iv2, argv[4], 16);
-    secret_key1[16] = '\0'; // Null-terminate the strings
-    secret_key2[16] = '\0';
-    iv1[16] = '\0';
-    iv2[16] = '\0';
+    char aes_key[17];
+    char iv[17];
+    char hmac_key[17];
+    strncpy(aes_key, argv[1], 16);
+    strncpy(iv, argv[2], 16);
+    strncpy(hmac_key, argv[3], 16);
+    aes_key[16] = '\0'; // Null-terminate the strings
+    iv[16] = '\0';
+    hmac_key[16] = '\0';
 
     // A 'reset' on UART0 will re-start this code at the top of main, won't clear flash, but will clean ram.
 
@@ -117,6 +108,7 @@ int main(int argc, char* argv[]){
             boot_firmware();
         }
     }
+    return 0;
 }
 
 
