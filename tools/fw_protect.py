@@ -9,19 +9,29 @@ Firmware Bundle-and-Protect Tool
 """
 import argparse
 import struct
+from Crypto.Cipher import AES
+from Crypto.Hash import SHA256
 
 
 def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile
     with open(infile, 'rb') as fp:
         firmware = fp.read()
+        
+    # Create original hash
+    original_hash = SHA256.new(firmware)
 
     #Load keys from secret_build_output.txt
         with open("secret_build_output.txt", "rb") as file:
         aes_key = readline().strip()
         iv = readline().strip()
         hmac = readline().strip()
-
+        
+    # Create cipher and hash    
+    cipher = AES.new(aes_key, AES.MODE_GCM, nonce = iv)
+    cipher.encrypt(firmware)
+    encrypted_hash = SHA256.new(firmware)
+        
     # Append null-terminated message to end of firmware
     firmware_and_message = firmware + message.encode() + b'\00'
 
