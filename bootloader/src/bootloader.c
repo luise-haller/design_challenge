@@ -13,6 +13,8 @@
 #include "driverlib/interrupt.h" // Interrupt API
 
 // Library Imports
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // Application Imports
@@ -52,7 +54,33 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len);
 // Firmware Buffer
 unsigned char data[FLASH_PAGESIZE];
 
-int main(void){
+// Define preproccessor macros for secrets
+#define SECRET_KEY_1 "my_secret_key1"
+#define SECRET_KEY_2 "my_secret_key2"
+#define IV_1 "my_iv1"
+#define IV_2 "my_iv2"
+
+int main(int argc, char* argv[]){
+    // Check if enough command-line arguments are provided
+    if (argc < 5) {
+        // Print an error message and exit if secrets are missing
+        fprintf(stderr, "Usage: %s <secret1> <secret2> <iv1> <iv2>\n", argv[0]);
+        return 1;
+    }
+
+    // Copy the secrets from command-line arguments to local variables (arrays)
+    char secret_key1[17];
+    char secret_key2[17];
+    char iv1[17];
+    char iv2[17];
+    strncpy(secret_key1, argv[1], 16);
+    strncpy(secret_key2, argv[2], 16);
+    strncpy(iv1, argv[3], 16);
+    strncpy(iv2, argv[4], 16);
+    secret_key1[16] = '\0'; // Null-terminate the strings
+    secret_key2[16] = '\0';
+    iv1[16] = '\0';
+    iv2[16] = '\0';
 
     // A 'reset' on UART0 will re-start this code at the top of main, won't clear flash, but will clean ram.
 
@@ -63,6 +91,8 @@ int main(void){
     uart_init(UART0);
     uart_init(UART1);
     uart_init(UART2);
+
+    
 
     // Enable UART0 interrupt
     IntEnable(INT_UART0);
@@ -88,6 +118,8 @@ int main(void){
         }
     }
 }
+
+
 
 /*
  * Load initial firmware into flash

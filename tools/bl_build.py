@@ -14,9 +14,25 @@ import os
 import pathlib
 import shutil
 import subprocess
+import secrets
 
 REPO_ROOT = pathlib.Path(__file__).parent.parent.absolute()
 BOOTLOADER_DIR = os.path.join(REPO_ROOT, "bootloader")
+
+
+def generate_secrets():
+    # Generate AES-128 secret keys and IVs
+    aes_key1 = secrets.token_bytes(16)
+    aes_key2 = secrets.token_bytes(16)
+    aes_iv1 = secrets.token_bytes(16)
+    aes_iv2 = secrets.token_bytes(16)
+
+    # Write the secret keys and IVs to the output file
+    with open("secret_build_output.txt", "w") as file:
+        file.write(f"AES Key 1: {aes_key1.hex()}\n")
+        file.write(f"AES Key 2: {aes_key2.hex()}\n")
+        file.write(f"AES IV 1: {aes_iv1.hex()}\n")
+        file.write(f"AES IV 1: {aes_iv2.hex()}\n")
 
 
 def copy_initial_firmware(binary_path: str):
@@ -26,13 +42,15 @@ def copy_initial_firmware(binary_path: str):
     shutil.copy(binary_path, os.path.join(BOOTLOADER_DIR, "src/firmware.bin"))
 
 
-def make_bootloader() -> bool:
+def make_bootloader(secret1, secret2, iv1, iv2) -> bool:
     # Build the bootloader from source.
 
     os.chdir(BOOTLOADER_DIR)
 
+    # Running the make command with the provided secrets as command-line arguments
+    make_cmd = f"make SECRET_KEY_1={secret1} SECRET_KEY_2={secret2} IV_1={iv1} IV_2={iv2}"
     subprocess.call("make clean", shell=True)
-    status = subprocess.call("make")
+    status = subprocess.call(make_cmd, shell=True)
 
     # Return True if make returned 0, otherwise return False.
     return status == 0
@@ -53,5 +71,19 @@ if __name__ == "__main__":
             f'ERROR: {firmware_path} does not exist or is not a file. You may have to call "make" in the firmware directory.'
         )
 
+    generate_secrets()
+
+    # Read secrets from the output file
+    with open("secret_build_output.txt", "r") as file:
+        lines = file.readlines()
+        secret1 = lines[0].split(":")[1].strip()
+        secret2 = lines[1].split(":")[1].strip()
+        iv1 = lines[2].split(":")[1].strip()
+        iv2 = lines[3].split(":")[1].strip()
+
     copy_initial_firmware(firmware_path)
-    make_bootloader()
+    # Building the bootloader with the secrets as command-line arguments
+    if make_bootloader(secret1, secret2, iv1, iv2):
+        print("Bootloader built successfully.")
+    else:
+        print("Bootloader build failed.")
