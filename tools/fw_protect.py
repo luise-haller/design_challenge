@@ -18,41 +18,35 @@ def protect_firmware(infile, outfile, version, message):
     with open(infile, 'rb') as fp:
         firmware = fp.read()
         
-    # Create original hash
-    original_sha = SHA256.new(firmware)
-    original_hash = original_sha.digest()
 
     #Load keys from secret_build_output.txt
     with open("secret_build_output.txt", "rb") as file:
-        aes_key = file.readline().strip()
-        iv = file.readline().strip()
-        hmac_key = file.readline().strip()
+        aes_key = file.readline().rstrip()
+        iv = file.readline().rstrip()
+        hmac = file.readline().rstrip()
         
     # Create cipher and hash    
     cipher = AES.new(aes_key, AES.MODE_GCM, nonce = iv)
-    cipher.encrypt(firmware)
-    encrypted_sha = SHA256.new(firmware)
-    encrypted_hash = encrypted_sha.digest()
-    
-    # Create HMAC and tag
-    hmac_generate = HMAC.new(hmac_key, msg = firmware, digestmod = SHA256)
-    hmac_tag = hmac_generate.digest()
-    
-    # Append hashes and HMAC tag to firmware
-    firmware = firmware + original_hash + encrypted_hash + hmac_tag
-    
-    # Append null-terminated message to end of firmware
-    firmware = firmware + message.encode() + b'\00'
 
+    # Encrypts firmware and digest it's MAC
+    enc_firmware, mac = cipher.encrypt_and_digest(firmware)
+    
     # Pack version and size into two little-endian shorts
     metadata = struct.pack('<HH', version, len(firmware))
 
-    # Append firmware and message to metadata
-    firmware_final = metadata + firmware
+    # Frame includes Metadata, Encrypted Firmware, MAC
+    frame = metadata + enc_firmware + mac
+
+    # Generates HMAC of the frame
+    hMAC = HMAC.new(hmac, msg=frame, digestmod=SHA256).digest()
+
+    # Frame + HMAC + Message + Null Byte
+    firmware_blob = frame + hMAC + message.encode() + b'\00'
+
 
     # Write final firmware to outfile
     with open(outfile, 'wb+') as outfile:
-        outfile.write(firmware_final)
+        outfile.write(firmware_blob)
 
 def verify_firmware(infile):
     # Load firmware bianry from infile
