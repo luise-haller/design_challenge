@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <beaverssl.h>
 
 // Application Imports
 #include "uart.h"
@@ -237,6 +238,9 @@ void load_firmware(void){
 
     uart_write(UART1, OK); // Acknowledge the metadata.
 
+    // Encrypted Buffer
+    unsigned char encrypted_data[size];
+
     /* Loop here until you can get all your characters and stuff */
     while (1){
 
@@ -248,9 +252,12 @@ void load_firmware(void){
 
         // Get the number of bytes specified
         for (int i = 0; i < frame_length; ++i){
-            data[data_index] = uart_read(UART1, BLOCKING, &read);
+            char next_byte = uart_read(UART1, BLOCKING, &read);
+            data[data_index] = next_byte;
+            encrypted_data[data_index] = next_byte;
             data_index += 1;
         } // for
+
 
         // If we filed our page buffer, program it
         if (data_index == FLASH_PAGESIZE || frame_length == 0){
