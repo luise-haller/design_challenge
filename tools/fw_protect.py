@@ -33,7 +33,7 @@ def protect_firmware(infile, outfile, version, message):
     encrypted_hash = SHA256.new(firmware)
     print(firmware)
     print(encrypted_hash)
-        
+    
     # Append null-terminated message to end of firmware
     firmware_and_message = firmware + message.encode() + b'\00'
 
