@@ -109,5 +109,5 @@ if __name__ == '__main__':
 <<<<<<< HEAD
     verify_firmware(infile=args.infile)
 =======
-    verify_firmware(infile=args.outfile)
+    verify_firmware(infile=args.infile)
 >>>>>>> 82bfb0fef57ec9f7845e4ba998db2c7fb6b22e11
