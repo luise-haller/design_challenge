@@ -105,7 +105,7 @@ int main(int argc, char* argv[]){
             load_firmware();
             uart_write_str(UART2, "Loaded new firmware.\n");
             nl(UART2);
-        }else if (instruction == BOOT){
+        } else if (instruction == BOOT){
             uart_write_str(UART1, "B");
             boot_firmware();
         }
@@ -159,7 +159,7 @@ void load_initial_firmware(void){
     if (rem_fw_bytes == 0){
         // No firmware left. Just write the release message
         program_flash(FW_BASE + (i * FLASH_PAGESIZE), (uint8_t *)initial_msg, msg_len);
-    }else{
+    } else {
         // Some firmware left. Determine how many bytes of release message can fit
         if (msg_len > (FLASH_PAGESIZE - rem_fw_bytes)){
             rem_msg_bytes = msg_len - (FLASH_PAGESIZE - rem_fw_bytes);
