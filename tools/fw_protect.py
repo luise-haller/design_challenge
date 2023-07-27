@@ -19,33 +19,36 @@ def protect_firmware(infile, outfile, version, message):
         firmware = fp.read()
         
     # Create original hash
-    original_hash = SHA256.new(firmware)
+    original_sha = SHA256.new(firmware)
+    original_hash = original_sha.digest()
 
     #Load keys from secret_build_output.txt
     with open("secret_build_output.txt", "rb") as file:
         aes_key = file.readline().strip()
         iv = file.readline().strip()
-        hmac = file.readline().strip()
+        hmac_key = file.readline().strip()
         
     # Create cipher and hash    
     cipher = AES.new(aes_key, AES.MODE_GCM, nonce = iv)
     cipher.encrypt(firmware)
-    encrypted_hash = SHA256.new(firmware)
-    print(firmware)
-    print(encrypted_hash)
+    encrypted_sha = SHA256.new(firmware)
+    encrypted_hash = encrypted_sha.digest()
+    
+    # Append hashes to firmware
+    firmware = firmware + original_hash + encrypted_hash
     
     # Append null-terminated message to end of firmware
-    firmware_and_message = firmware + message.encode() + b'\00'
+    firmware = firmware + message.encode() + b'\00'
 
     # Pack version and size into two little-endian shorts
     metadata = struct.pack('<HH', version, len(firmware))
 
     # Append firmware and message to metadata
-    firmware_blob = metadata + firmware_and_message
+    firmware_final = metadata + firmware
 
-    # Write firmware blob to outfile
+    # Write final firmware to outfile
     with open(outfile, 'wb+') as outfile:
-        outfile.write(firmware_blob)
+        outfile.write(firmware_final)
 
 
 if __name__ == '__main__':
