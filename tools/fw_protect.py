@@ -28,6 +28,7 @@ def protect_firmware(infile, outfile, version, message):
     # Create cipher and hash    
     cipher = AES.new(aes_key, AES.MODE_GCM, nonce = iv)
 
+    # Encrypts firmware and digest it's MAC
     enc_firmware, mac = cipher.encrypt_and_digest(firmware)
     
     # Pack version and size into two little-endian shorts
@@ -36,7 +37,7 @@ def protect_firmware(infile, outfile, version, message):
     # Frame includes Metadata, Encrypted Firmware, MAC
     frame = metadata + enc_firmware + mac
 
-    #
+    # Generates HMAC of the frame
     hMAC = HMAC.new(hmac, msg=frame, digestmod=SHA256).digest()
 
     # Frame + HMAC + Message + Null Byte
