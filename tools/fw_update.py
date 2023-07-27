@@ -26,6 +26,8 @@ import argparse
 import struct
 import time
 import socket
+import hashlib
+from Crypto.Hash import HMAC, SHA256
 
 from util import *
 
@@ -108,6 +110,42 @@ def update(ser, infile, debug):
 
     return ser
 
+def verify_firmware(infile):
+    # Loading firmware binary from infile
+    with open(infile, 'rb') as fp:
+        firmware_final = fp.read()
+
+    #Extract metadata, og hash, encrypted hash, HMAC tag
+    metadata = firmware_final[:4]
+    og_hash = firmware_final[-96:-64]
+    hmac_tag = firmware_final[-32:]
+
+    # get firmware data without metadata and appended message
+    firmware = firmware_final[4:-97]
+
+    # Unpack the version and size from metadata
+    version, size = struct.unpack('<HH', metadata)
+
+    # Load keys from secret_build_output.txt
+    with open("secret_build_output.txt", "rb") as file:
+        hmac_key = file.readline().strip()
+    
+    # Calculate SHA256 hashes and HMAC tag for received fw
+    recalculated_og_sha = SHA256.new(firmware)
+    recalculated_og_hash = recalculated_og_sha.digest()
+
+    #Recalculate SHA256 hashed & HMAC tag for received fw
+    recalculated_encrypted_sha = SHA256.new(firmware).digest()
+
+    # Recalculate HMAC tag
+    hmac_generate = HMAC.new(hmac_key, msg=firmware, digestmod=SHA256)
+    recalculated_hmac_tag = hmac_generate.digest()
+
+    # Comparing the calculated values with the extracted ones toverify fw
+    if og_hash == recalculated_og_hash and hmac_tag == recalculated_hmac_tag:
+        print("Firmware integrity verified")
+    else:
+        print("Firmware integrity verification failed")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Firmware Update Tool")
@@ -136,5 +174,6 @@ if __name__ == "__main__":
     uart0_sock.close()
 
     update(ser=uart1, infile=args.firmware, debug=args.debug)
+    verify_firmware(infile=args.firmware)
 
     uart1_sock.close()

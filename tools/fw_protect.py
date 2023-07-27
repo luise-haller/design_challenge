@@ -62,7 +62,7 @@ def verify_firmware(infile):
     # get firmware data without metadata and appended mes
     firmware = firmware_final[4:-97]
 
-    # Unpack version and size from metadata
+    # Unpack the version and size from metadata
     version, size = struct.unpack('<HH', metadata)
 
     #Load keys from secret_build_output.txt
@@ -102,4 +102,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     protect_firmware(infile=args.infile, outfile=args.outfile, version=int(args.version), message=args.message)
-    verify_firmware(infile=args.outfile)
+    verify_firmware(infile=args.infile)
