@@ -43,9 +43,9 @@ def protect_firmware(infile, outfile, version, message):
     firmware_blob = frame + hMAC + message.encode() + b'\00'
 
 
-    # Write firmware blob to outfile
+    # Write final firmware to outfile
     with open(outfile, 'wb+') as outfile:
-        outfile.write(firmware_blob)
+        outfile.write(firmware_final)
 
 
 if __name__ == '__main__':
