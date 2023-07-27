@@ -10,7 +10,7 @@ Firmware Bundle-and-Protect Tool
 import argparse
 import struct
 from Crypto.Cipher import AES
-from Crypto.Hash import SHA256
+from Crypto.Hash import HMAC, SHA256
 
 
 def protect_firmware(infile, outfile, version, message):
@@ -34,8 +34,12 @@ def protect_firmware(infile, outfile, version, message):
     encrypted_sha = SHA256.new(firmware)
     encrypted_hash = encrypted_sha.digest()
     
-    # Append hashes to firmware
-    firmware = firmware + original_hash + encrypted_hash
+    # Create HMAC and tag
+    hmac_generate = HMAC.new(hmac_key, msg = firmware, digestmod = SHA256)
+    hmac_tag = hmac_generate.digest()
+    
+    # Append hashes and HMAC tag to firmware
+    firmware = firmware + original_hash + encrypted_hash + hmac_tag
     
     # Append null-terminated message to end of firmware
     firmware = firmware + message.encode() + b'\00'
