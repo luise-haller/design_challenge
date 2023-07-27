@@ -10,7 +10,7 @@ Firmware Bundle-and-Protect Tool
 import argparse
 import struct
 from Crypto.Cipher import AES
-from Crypto.Hash import SHA256
+from Crypto.Hash import HMAC, SHA256
 
 
 def protect_firmware(infile, outfile, version, message):
@@ -18,30 +18,30 @@ def protect_firmware(infile, outfile, version, message):
     with open(infile, 'rb') as fp:
         firmware = fp.read()
         
-    # Create original hash
-    original_hash = SHA256.new(firmware)
 
     #Load keys from secret_build_output.txt
     with open("secret_build_output.txt", "rb") as file:
-        aes_key = file.readline().strip()
-        iv = file.readline().strip()
-        hmac = file.readline().strip()
+        aes_key = file.readline().rstrip()
+        iv = file.readline().rstrip()
+        hmac = file.readline().rstrip()
         
     # Create cipher and hash    
     cipher = AES.new(aes_key, AES.MODE_GCM, nonce = iv)
-    cipher.encrypt(firmware)
-    encrypted_hash = SHA256.new(firmware)
-    print(firmware)
-    print(encrypted_hash)
-    
-    # Append null-terminated message to end of firmware
-    firmware_and_message = firmware + message.encode() + b'\00'
 
+    enc_firmware, mac = cipher.encrypt_and_digest(firmware)
+    
     # Pack version and size into two little-endian shorts
     metadata = struct.pack('<HH', version, len(firmware))
 
-    # Append firmware and message to metadata
-    firmware_blob = metadata + firmware_and_message
+    # Frame includes Metadata, Encrypted Firmware, MAC
+    frame = metadata + enc_firmware + mac
+
+    #
+    hMAC = HMAC.new(hmac, msg=frame, digestmod=SHA256).digest()
+
+    # Frame + HMAC + Message + Null Byte
+    firmware_blob = frame + hMAC + message.encode() + b'\00'
+
 
     # Write firmware blob to outfile
     with open(outfile, 'wb+') as outfile:
