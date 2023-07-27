@@ -45,7 +45,7 @@ def protect_firmware(infile, outfile, version, message):
 
     # Write final firmware to outfile
     with open(outfile, 'wb+') as outfile:
-        outfile.write(firmware_final)
+        outfile.write(firmware_blob)
 
 
 if __name__ == '__main__':
