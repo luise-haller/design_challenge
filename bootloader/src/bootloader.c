@@ -26,7 +26,7 @@ void load_initial_firmware(void);
 void load_firmware();
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
-void decrypt_firmware(aes_key, iv);
+void decrypt_firmware(uint8_t* aes_key, uint8_t* iv);
 
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
@@ -71,11 +71,11 @@ int main(int argc, char* argv[]){
     
 
     // Copy the secrets from command-line arguments to local variables (arrays)
-    char aes_key[17];
-    char iv[17];
+    uint8_t aes_key[17];
+    uint8_t iv[17];
     char hmac_key[17];
-    strncpy(aes_key, argv[1], 16);
-    strncpy(iv, argv[2], 16);
+    strncpy((char*)aes_key, argv[1], 16);
+    strncpy((char*)iv, argv[2], 16);
     strncpy(hmac_key, argv[3], 16);
     aes_key[16] = '\0'; // Null-terminate the strings
     iv[16] = '\0';
