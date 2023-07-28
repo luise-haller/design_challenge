@@ -57,7 +57,7 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len);
 unsigned char data[FLASH_PAGESIZE];
 
 // Encrypted Firmware Buffer and size of encrypted firmware
-unsigned char encrypted_data[32768];
+char encrypted_data[32768];
 uint16_t encrypted_size;
 
 int main(int argc, char* argv[]){
@@ -390,6 +390,22 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len) {
     }
 }
 
-void decrypt_firmware(aes_key, iv) {
+void decrypt_firmware(char* aes_key, char* iv) {
     // try to find mac (?)
+    int result;
+
+    // for debugging purposes
+    printf("AES Key: %s\n", aes_key);
+    printf("IV: %s\n", iv);
+
+    // performing AES-GCM decryption on the encrypted_data buffer
+    result = gcm_decrypt_and_verify(aes_key, iv, encrypted_data, encrypted_size, NULL, 0, NULL);
+
+    if (result == 1) {
+        printf("Firmware decryption successful\n");
+    } else {
+        printf("Firmware decryption failed or authentication failed\n");
+    }
+    
+
 }
