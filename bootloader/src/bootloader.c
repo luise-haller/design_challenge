@@ -23,9 +23,10 @@
 
 // Forward Declarations
 void load_initial_firmware(void);
-void load_firmware(void);
+void load_firmware();
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
+void decrypt_firmware(aes_key, iv);
 
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
@@ -54,6 +55,10 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len);
 
 // Firmware Buffer
 unsigned char data[FLASH_PAGESIZE];
+
+// Encrypted Firmware Buffer and size of encrypted firmware
+unsigned char encrypted_data[32768];
+uint16_t encrypted_size;
 
 int main(int argc, char* argv[]){
     // Check if enough command-line arguments are provided
@@ -103,7 +108,7 @@ int main(int argc, char* argv[]){
         uint32_t instruction = uart_read(UART1, BLOCKING, &resp);
         if (instruction == UPDATE){
             uart_write_str(UART1, "U");
-            load_firmware();
+            load_firmware(aes_key, iv);
             uart_write_str(UART2, "Loaded new firmware.\n");
             nl(UART2);
         } else if (instruction == BOOT){
@@ -187,12 +192,13 @@ void load_initial_firmware(void){
 /*
  * Load the firmware into flash.
  */
-void load_firmware(void){
+void load_firmware(){
     int frame_length = 0;
     int read = 0;
     uint32_t rcv = 0;
 
     uint32_t data_index = 0;
+    uint32_t data_counter = 0;
     uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
@@ -212,6 +218,7 @@ void load_firmware(void){
     size = (uint32_t)rcv;
     rcv = uart_read(UART1, BLOCKING, &read);
     size |= (uint32_t)rcv << 8;
+    encrypted_size = size;
 
     uart_write_str(UART2, "Received Firmware Size: ");
     uart_write_hex(UART2, size);
@@ -238,9 +245,6 @@ void load_firmware(void){
 
     uart_write(UART1, OK); // Acknowledge the metadata.
 
-    // Encrypted Buffer
-    unsigned char encrypted_data[size];
-
     /* Loop here until you can get all your characters and stuff */
     while (1){
 
@@ -252,12 +256,12 @@ void load_firmware(void){
 
         // Get the number of bytes specified
         for (int i = 0; i < frame_length; ++i){
-            char next_byte = uart_read(UART1, BLOCKING, &read);
-            data[data_index] = next_byte;
-            encrypted_data[data_index] = next_byte;
+            char new_byte = uart_read(UART1, BLOCKING, &read);
+            data[data_index] = new_byte;
+            encrypted_data[data_counter] = new_byte;
             data_index += 1;
+            data_counter += 1;
         } // for
-
 
         // If we filed our page buffer, program it
         if (data_index == FLASH_PAGESIZE || frame_length == 0){
@@ -384,4 +388,8 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len) {
         uart_write_str(uart, byte_str);
         uart_write_str(uart, " ");
     }
+}
+
+void decrypt_firmware(aes_key, iv) {
+    // try to find mac (?)
 }
