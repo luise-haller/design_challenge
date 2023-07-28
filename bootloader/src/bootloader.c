@@ -215,9 +215,9 @@ void load_firmware(){
 
     // Get size as 16 bytes 
     rcv = uart_read(UART1, BLOCKING, &read);
-    size = (uint32_t)rcv;
+    size = (uint16_t)rcv;
     rcv = uart_read(UART1, BLOCKING, &read);
-    size |= (uint32_t)rcv << 8;
+    size |= (uint16_t)rcv << 8;
     encrypted_size = size;
 
     uart_write_str(UART2, "Received Firmware Size: ");
@@ -407,7 +407,8 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     printf("\n");
 
     // performing AES-GCM decryption on the encrypted_data buffer
-    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, NULL, 0, NULL);
+    char decrypted_data[32768]; //assumes that decrypted data won't exceed the size of the encrypted data
+    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, NULL, 0, decrypted_data);
 
     if (result == 1) {
         printf("Firmware decryption successful\n");
