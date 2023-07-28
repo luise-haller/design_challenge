@@ -390,16 +390,24 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len) {
     }
 }
 
-void decrypt_firmware(char* aes_key, char* iv) {
+void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     // try to find mac (?)
     int result;
 
     // for debugging purposes
-    printf("AES Key: %s\n", aes_key);
-    printf("IV: %s\n", iv);
+    printf("AES Key:");
+    for (int i = 0; i < 16; i++) {
+        printf("%02x", aes_key[i]);
+    }
+    printf("\n");
+    printf("IV:");
+    for (int i = 0; i < 16; i++) {
+        printf("%02x", iv[i]);
+    }
+    printf("\n");
 
     // performing AES-GCM decryption on the encrypted_data buffer
-    result = gcm_decrypt_and_verify(aes_key, iv, encrypted_data, encrypted_size, NULL, 0, NULL);
+    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, NULL, 0, NULL);
 
     if (result == 1) {
         printf("Firmware decryption successful\n");
