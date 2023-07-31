@@ -84,7 +84,9 @@ def update(ser, infile, debug):
 
     send_metadata(ser, metadata, debug=debug)
 
-    for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)):
+
+    ser.write(firmware)
+    """    for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)):
         data = firmware[frame_start : frame_start + FRAME_SIZE]
 
         # Get length of data.
@@ -95,7 +97,7 @@ def update(ser, infile, debug):
         frame = struct.pack(frame_fmt, length, data)
 
         send_frame(ser, frame, debug=debug)
-        print(f"Wrote frame {idx} ({len(frame)} bytes)")
+        print(f"Wrote frame {idx} ({len(frame)} bytes)")"""
 
     print("Done writing firmware.")
 

@@ -195,13 +195,13 @@ void load_initial_firmware(void){
 /*
  * Load the firmware into flash.
  */
-void load_firmware(){
-    int frame_length = 0;
+void load_firmware(char* aes_key, char* iv){
+    //int frame_length = 0;
     int read = 0;
     uint32_t rcv = 0;
 
     uint32_t data_index = 0;
-    uint32_t data_counter = 0;
+    //uint32_t data_counter = 0;
     uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
@@ -248,8 +248,68 @@ void load_firmware(){
 
     uart_write(UART1, OK); // Acknowledge the metadata.
 
+    char firmware[size];
+    uint8_t byte;
+    int i = 0;
+    do{
+        byte = uart_read(UART1, BLOCKING, &read);
+        firmware[i++] = byte;
+    } while (byte != '\n' && i< sizeof(firmware));
+
+    char mac[16];
+    i = 0;
+    do{
+        byte = uart_read(UART1, BLOCKING, &read);
+        mac[i++] = byte;
+    } while (byte != '\n' && i< sizeof(mac));
+
+    char hmac[32];
+    i=0;
+    do{
+        byte = uart_read(UART1, BLOCKING, &read);
+        hmac[i++] = byte;
+    } while (byte != '\n' && i< sizeof(hmac));
+
+    uint8_t message[256];
+    i=0;
+    do{
+        byte = uart_read(UART1, BLOCKING, &read);
+        message[i++] = byte;
+    } while (byte != '\n' && i< sizeof(message));
+
+    int result = gcm_decrypt_and_verify(aes_key, iv, firmware, size, NULL, 0, mac);
+
+    if(result == 1){
+        uart_write_str(UART2, "FIRMWARE DECRYPTION SUCCESSFUL");
+    }
+    else {
+        uart_write_str(UART2, "FIRMWARE UPDATE ERROR");
+    }
+
+
+    while(data_index < size){
+        uint32_t data_remaining = size - data_index;
+        uint8_t data_to_write = data_remaining < FLASH_PAGESIZE ? data_remaining : FLASH_PAGESIZE;
+
+        // Try to write flash and check for error
+        if (program_flash(page_addr, &data_to_write, data_index)) {
+            uart_write(UART1, ERROR); // Reject the firmware
+            SysCtlReset();            // Reset device
+            return;
+        }
+        page_addr += FLASH_PAGESIZE;
+        data_index += data_to_write;
+
+        // If at end of firmware, go to main
+        if (data_index == size) {
+            uart_write(UART1, OK);
+            break;
+        }
+
+
+    }
     /* Loop here until you can get all your characters and stuff */
-    while (1){
+/*    while (1){
 
         // Get two bytes for the length.
         rcv = uart_read(UART1, BLOCKING, &read);
@@ -308,6 +368,7 @@ void load_firmware(){
 
         uart_write(UART1, OK); // Acknowledge the frame.
     }                          // while(1)
+*/
 }
 
 /*
