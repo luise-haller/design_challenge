@@ -396,7 +396,8 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     int result;
 
     // for debugging purposes
-    printf("AES Key:");
+    // replace print statements with uart write
+    /*printf("AES Key:");
     for (int i = 0; i < 16; i++) {
         printf("%02x", aes_key[i]);
     }
@@ -405,7 +406,7 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     for (int i = 0; i < 16; i++) {
         printf("%02x", iv[i]);
     }
-    printf("\n");
+    printf("\n");*/
 
     // performing AES-GCM decryption on the encrypted_data buffer
     char decrypted_data[32768]; //assumes that decrypted data won't exceed the size of the encrypted data
@@ -418,18 +419,18 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
         mac[ctr] = decrypted_data[i];
         ctr++;
     }
-    printf("MAC:");
+    /*printf("MAC:");
     for (int i = 0; i < 16; i++) {
         printf("%02x", mac[i]);
     }
-    printf("\n");
+    printf("\n");*/
     result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, NULL, 0, (char*)mac);
 
-    if (result == 1) {
+    /*if (result == 1) {
         printf("Firmware decryption successful\n");
     } else {
         printf("Firmware decryption failed or authentication failed\n");
-    }
+    }*/
     
 
 }
@@ -439,15 +440,19 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
 void write_decrypt() {
     uint32_t page_addr = FW_BASE;
     char data_page[FLASH_PAGESIZE];
-    for(int i = 0; i <= )
-    if (program_flash(page_addr, /*data*/, /*data_len*/)){
+    int ctr = 0;
+    for(int i = 0; i <= FLASH_PAGESIZE; i++)  {
+
+        ctr++;
+    }
+    if (program_flash(page_addr, data, data_len)){
                 uart_write(UART1, ERROR); // Reject the firmware
                 SysCtlReset();            // Reset device
                 return;
             }
 
             // Verify flash program
-            if (memcmp(data, (void *) page_addr, /*data_len*/) != 0){
+            if (memcmp(data, (void *) page_addr, data_len) != 0){
                 uart_write_str(UART2, "Flash check failed.\n");
                 uart_write(UART1, ERROR); // Reject the firmware
                 SysCtlReset();            // Reset device
@@ -458,7 +463,7 @@ void write_decrypt() {
             uart_write_str(UART2, "Page successfully programmed\nAddress: ");
             uart_write_hex(UART2, page_addr);
             uart_write_str(UART2, "\nBytes: ");
-            uart_write_hex(UART2, /*data_len*/);
+            uart_write_hex(UART2, data_len);
             nl(UART2);
 
             // Update to next page
