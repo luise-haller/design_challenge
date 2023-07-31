@@ -108,7 +108,7 @@ int main(int argc, char* argv[]){
         uint32_t instruction = uart_read(UART1, BLOCKING, &resp);
         if (instruction == UPDATE){
             uart_write_str(UART1, "U");
-            load_firmware(aes_key, iv);
+            load_firmware();
             uart_write_str(UART2, "Loaded new firmware.\n");
             nl(UART2);
         } else if (instruction == BOOT){
@@ -390,8 +390,9 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len) {
     }
 }
 
+// Decrypts firmware and uses MAC key to verify the data has not been modified
+
 void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
-    // try to find mac (?)
     int result;
 
     // for debugging purposes
@@ -408,7 +409,21 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
 
     // performing AES-GCM decryption on the encrypted_data buffer
     char decrypted_data[32768]; //assumes that decrypted data won't exceed the size of the encrypted data
-    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, NULL, 0, decrypted_data);
+
+    // find MAC tag from data
+    char mac[16];
+    int mac1 = encrypted_size - 16;
+    int ctr = 0;
+    for (int i = mac1; i < encrypted_size; i++) {
+        mac[ctr] = decrypted_data[i];
+        ctr++;
+    }
+    printf("MAC:");
+    for (int i = 0; i < 16; i++) {
+        printf("%02x", mac[i]);
+    }
+    printf("\n");
+    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, NULL, 0, (char*)mac);
 
     if (result == 1) {
         printf("Firmware decryption successful\n");
@@ -417,4 +432,42 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     }
     
 
+}
+
+// Write decrypted data to flash (in progress)
+
+void write_decrypt() {
+    uint32_t page_addr = FW_BASE;
+    char data_page[FLASH_PAGESIZE];
+    for(int i = 0; i <= )
+    if (program_flash(page_addr, /*data*/, /*data_len*/)){
+                uart_write(UART1, ERROR); // Reject the firmware
+                SysCtlReset();            // Reset device
+                return;
+            }
+
+            // Verify flash program
+            if (memcmp(data, (void *) page_addr, /*data_len*/) != 0){
+                uart_write_str(UART2, "Flash check failed.\n");
+                uart_write(UART1, ERROR); // Reject the firmware
+                SysCtlReset();            // Reset device
+                return;
+            }
+
+            // Write debugging messages to UART2.
+            uart_write_str(UART2, "Page successfully programmed\nAddress: ");
+            uart_write_hex(UART2, page_addr);
+            uart_write_str(UART2, "\nBytes: ");
+            uart_write_hex(UART2, /*data_len*/);
+            nl(UART2);
+
+            // Update to next page
+            page_addr += FLASH_PAGESIZE;
+            data_index = 0;
+
+            // If at end of firmware, go to main
+            if (frame_length == 0){
+                uart_write(UART1, OK);
+                break;
+            }
 }
