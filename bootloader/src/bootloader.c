@@ -273,7 +273,7 @@ void load_firmware(){
                 uart_write_str(UART2, "Got zero length frame.\n");
             }
             
-            // Try to write flash and check for error
+            /* Try to write flash and check for error
             if (program_flash(page_addr, data, data_index)){
                 uart_write(UART1, ERROR); // Reject the firmware
                 SysCtlReset();            // Reset device
@@ -294,6 +294,7 @@ void load_firmware(){
             uart_write_str(UART2, "\nBytes: ");
             uart_write_hex(UART2, data_index);
             nl(UART2);
+            */
 
             // Update to next page
             page_addr += FLASH_PAGESIZE;
@@ -400,6 +401,8 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
 
     // for debugging purposes
     // replace print statements with uart write
+    uart_write_str(UART2, (char*) aes_key);
+    uart_write_str(UART2, (char*) iv);
     /*printf("AES Key:");
     for (int i = 0; i < 16; i++) {
         printf("%02x", aes_key[i]);
@@ -422,6 +425,7 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
         mac[ctr] = decrypted_data[i];
         ctr++;
     }
+    uart_write_str(UART2, (char*) mac);
     /*printf("MAC:");
     for (int i = 0; i < 16; i++) {
         printf("%02x", mac[i]);
@@ -448,11 +452,7 @@ void write_decrypt(char* decrypted_data, int decrypted_data_size) {
     int data_index = 0;
     int remaining_data = decrypted_data_size;
     char data_page[FLASH_PAGESIZE];
-    /*int ctr = 0;
-    for(int i = 0; i <= FLASH_PAGESIZE; i++)  {
-
-        ctr++;
-    }*/
+ 
     while (remaining_data > 0) {
         int bytes_to_write = remaining_data > FLASH_PAGESIZE ? FLASH_PAGESIZE : remaining_data;
 

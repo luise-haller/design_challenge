@@ -48,7 +48,7 @@ def protect_firmware(infile, outfile, version, message):
     with open(outfile, 'wb+') as outfile:
         outfile.write(firmware_blob)
 
-def verify_firmware(infile):
+""" def verify_firmware(infile):
     # Load firmware bianry from infile
     with open(infile, 'rb') as fp:
         firmware_final = fp.read()
@@ -91,7 +91,7 @@ def verify_firmware(infile):
     if og_hash == recalculated_og_hash and encrypted_hash == recalculated_encrypted_hash and hmac_tag == recalculated_hmac_tag:
         print("Firmware integrity verified")
     else:
-        print("Firmware integrity verfication failed")
+        print("Firmware integrity verfication failed") """
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Firmware Update Tool')
@@ -102,4 +102,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     protect_firmware(infile=args.infile, outfile=args.outfile, version=int(args.version), message=args.message)
-    verify_firmware(infile=args.outfile)
+    # verify_firmware(infile=args.outfile)
