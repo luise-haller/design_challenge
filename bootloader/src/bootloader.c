@@ -245,6 +245,7 @@ void load_firmware(){
     // Create 32 bit word for flash programming, version is at lower address, size is at higher address
     uint32_t metadata = ((size & 0xFFFF) << 16) | (version & 0xFFFF);
     program_flash(METADATA_BASE, (uint8_t *)(&metadata), 4);
+    uart_write_str(UART2, "Metadata loaded");
 
     uart_write(UART1, OK); // Acknowledge the metadata.
 
@@ -265,6 +266,9 @@ void load_firmware(){
             data_index += 1;
             data_counter += 1;
         } // for
+
+        // issue here (found with debugging statements)
+        uart_write_str(UART2, "Encrypted Data Stored");
 
         // If we filed our page buffer, program it
         if (data_index == FLASH_PAGESIZE || frame_length == 0){
@@ -400,19 +404,11 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     int result;
 
     // for debugging purposes
-    // replace print statements with uart write
+    uart_write_str(UART2, "AES Key:");
     uart_write_str(UART2, (char*) aes_key);
+    uart_write_str(UART2, "\nIV:");
     uart_write_str(UART2, (char*) iv);
-    /*printf("AES Key:");
-    for (int i = 0; i < 16; i++) {
-        printf("%02x", aes_key[i]);
-    }
-    printf("\n");
-    printf("IV:");
-    for (int i = 0; i < 16; i++) {
-        printf("%02x", iv[i]);
-    }
-    printf("\n");*/
+    uart_write_str(UART2, "\nMAC:");
 
     // performing AES-GCM decryption on the encrypted_data buffer
     char decrypted_data[32768]; //assumes that decrypted data won't exceed the size of the encrypted data
@@ -422,24 +418,21 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     int mac1 = encrypted_size - 16;
     int ctr = 0;
     for (int i = mac1; i < encrypted_size; i++) {
-        mac[ctr] = decrypted_data[i];
+        mac[ctr] = encrypted_data[i];
         ctr++;
     }
     uart_write_str(UART2, (char*) mac);
-    /*printf("MAC:");
-    for (int i = 0; i < 16; i++) {
-        printf("%02x", mac[i]);
-    }
-    printf("\n");*/
+    uart_write_str(UART2, "\n");
+
     result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, decrypted_data, encrypted_size - 16, (char*)mac);
 
     // calculate size of decrypted data
     int decrypted_data_size = result == 1 ? encrypted_size - 16 : 0;
-    /*if (result == 1) {
-        printf("Firmware decryption successful\n");
+    if (result == 1) {
+        uart_write_str(UART2, "Firmware decryption successful\n");
     } else {
-        printf("Firmware decryption failed or authentication failed\n");
-    }*/
+        uart_write_str(UART2, "Firmware decryption failed or authentication failed\n");
+    }
     write_decrypt(decrypted_data, decrypted_data_size);
     
 
