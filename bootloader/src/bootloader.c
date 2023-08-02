@@ -109,11 +109,12 @@ int main(int argc, char* argv[]){
         uart_write_str(UART2, "Instruction received: ");
         uart_write(UART2, instruction);
         nl(UART2);
-        uart_write_str(UART2, "Response received: ");
+        /*uart_write_str(UART2, "Response received: ");
         uart_write(UART2, (uint32_t) resp);
-        nl(UART2);
+        nl(UART2);*/
         if (instruction == UPDATE){
-            // uart_write_str(UART1, "U"); (idk what the point of this is)
+            uart_write_str(UART1, "U"); 
+            uart_write_str(UART2, "Updating..."); 
             load_firmware();
             // bootloader is currently hanging here -> debug load_firmware
             uart_write_str(UART2, "Loaded new firmware.\n");
@@ -121,7 +122,7 @@ int main(int argc, char* argv[]){
             // Call decrypt_firmware() and pass in the AES key and IV
             decrypt_firmware(aes_key, iv);
         } else if (instruction == BOOT){
-            // uart_write_str(UART1, "B"); (idk what the point of this is either)
+            uart_write_str(UART1, "Booting...");
             boot_firmware();
         }
     }
@@ -465,7 +466,7 @@ void write_decrypt(char* decrypted_data, int decrypted_data_size) {
 
         // Try to write flash and check for error
         if (program_flash(page_addr, (unsigned char*)data_page, bytes_to_write) != 0) {
-            uart_write(UART1, ERROR); // Reject the firmware
+            uart_write(UART1, 0x10); // Reject the firmware
             SysCtlReset();            // Reset device
             return;
         }
@@ -473,7 +474,7 @@ void write_decrypt(char* decrypted_data, int decrypted_data_size) {
         // Verify flash program
             if (memcmp(data_page, (void *) page_addr, bytes_to_write) != 0) {
                 uart_write_str(UART2, "Flash check failed.\n");
-                uart_write(UART1, ERROR); // Reject the firmware
+                uart_write(UART1, 0x11); // Reject the firmware
                 SysCtlReset();            // Reset device
                 return;
             }

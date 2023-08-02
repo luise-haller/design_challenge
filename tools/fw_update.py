@@ -42,7 +42,7 @@ def send_metadata(ser, metadata, debug=False):
 
     print("Waiting for bootloader to enter update mode...")
     while ser.read(1).decode() != "U":
-        print("got a byte")
+        print("got a byte") 
         pass
 
     # Send size and version to bootloader.
