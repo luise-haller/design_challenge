@@ -71,15 +71,15 @@ int main(int argc, char* argv[]){
     }*/ 
     
     // Copy the secrets from command-line arguments to local variables (arrays)
-    uint8_t aes_key[17];
-    uint8_t iv[17];
-    char hmac_key[17];
+    uint8_t aes_key[16];
+    uint8_t iv[16];
+    char hmac_key[16];
     strncpy((char*)aes_key, argv[1], 16);
     strncpy((char*)iv, argv[2], 16);
     strncpy(hmac_key, argv[3], 16);
-    aes_key[16] = '\0'; // Null-terminate the strings
+    /*aes_key[16] = '\0'; // Null-terminate the strings
     iv[16] = '\0';
-    hmac_key[16] = '\0';
+    hmac_key[16] = '\0';*/
 
     // A 'reset' on UART0 will re-start this code at the top of main, won't clear flash, but will clean ram.
 
@@ -435,32 +435,29 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
 
     // find MAC tag from data
     char mac[16];
-    int mac1 = encrypted_size - 16;
-    int ctr = 0;
-    for (int i = mac1; i < encrypted_size; i++) {
-        mac[ctr] = encrypted_data[i];
-        ctr++;
+    for (int i = 0; i < 16; i++) {
+        mac[i] = encrypted_data[i+encrypted_size];
     }
-    uart_write_str(UART2, (char*) mac);
-    uart_write_str(UART2, "\n");
+    char aad[16];
+    for (int i = 0; i < 16; i++) {
+        aad[i] = rand();
+    }
+    // uart_write_str(UART2, (char*) mac);
+    // uart_write_str(UART2, "\n");
 
     // error is still occurring here
-    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, NULL, 0, mac);
+    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, aad, 16, mac);
     // we aren't sending AAD in the beginning so the fields should theoretically just be blank
 
-    // calculate size of decrypted data
-    int decrypted_data_size = result == 1 ? encrypted_size - 16 : 0;
+    // calculate size of decrypted data (shouldn't it be the same as encrypted?)
+    // int decrypted_data_size = result == 1 ? encrypted_size - 16 : 0;
     if (result == 1) {
         uart_write_str(UART2, "Firmware decryption successful\n");
     } else {
         uart_write_str(UART2, "Firmware decryption failed or authentication failed\n");
     }
-    for (int i = 0; i < 16; i++) {
-        uart_write(UART2, encrypted_data[i]);
-    }
-    write_decrypt(encrypted_data, decrypted_data_size);
+    write_decrypt(encrypted_data, encrypted_size);
     
-
 }
 
 // Write decrypted data to flash (in progress)
