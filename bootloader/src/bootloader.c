@@ -207,9 +207,9 @@ void load_firmware(){
     int read = 0;
     uint32_t rcv = 0;
 
-    uint32_t data_index = 0;
+    //uint32_t data_index = 0;
     uint32_t data_counter = 0;
-    uint32_t page_addr = FW_BASE;
+    // uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
 
@@ -273,9 +273,9 @@ void load_firmware(){
         // Get the number of bytes specified
         for (int i = 0; i < frame_length; ++i){
             char new_byte = uart_read(UART1, BLOCKING, &read);
-            data[data_index] = new_byte;
+            // data[data_index] = new_byte;
             encrypted_data[data_counter] = new_byte;
-            data_index += 1;
+            // data_index += 1;
             data_counter += 1;
         } // for
 
@@ -283,13 +283,13 @@ void load_firmware(){
         uart_write_str(UART2, "Encrypted Data Stored");
 
         // If we filed our page buffer, program it
-        if (data_index == FLASH_PAGESIZE || frame_length == 0){
+        /*if (data_index == FLASH_PAGESIZE || frame_length == 0){
 
             if(frame_length == 0){
                 uart_write_str(UART2, "Got zero length frame.\n");
             }
             
-            /* Try to write flash and check for error
+            // Try to write flash and check for error
             if (program_flash(page_addr, data, data_index)){
                 uart_write(UART1, ERROR); // Reject the firmware
                 SysCtlReset();            // Reset device
@@ -310,7 +310,7 @@ void load_firmware(){
             uart_write_str(UART2, "\nBytes: ");
             uart_write_hex(UART2, data_index);
             nl(UART2);
-            */
+            
 
             // Update to next page
             page_addr += FLASH_PAGESIZE;
@@ -321,7 +321,15 @@ void load_firmware(){
                 uart_write(UART1, OK);
                 break;
             }
-        } // if
+        } // if */
+        if(frame_length == 0){
+                uart_write_str(UART2, "Got zero length frame.\n");
+                uart_write(UART1, OK);
+                break;
+        }
+        // data_index = 0;
+
+        // If at end of firmware, go to main
 
         uart_write(UART1, OK); // Acknowledge the frame.
     }                          // while(1)
