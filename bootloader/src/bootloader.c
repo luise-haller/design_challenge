@@ -446,7 +446,7 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     // uart_write_str(UART2, "\n");
 
     // error is still occurring here
-    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, aad, 16, mac);
+    result = aes_decrypt((char*)aes_key, (char*)iv, encrypted_data, encrypted_size);
     // we aren't sending AAD in the beginning so the fields should theoretically just be blank
 
     // calculate size of decrypted data (shouldn't it be the same as encrypted?)

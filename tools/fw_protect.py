@@ -11,6 +11,7 @@ import argparse
 import struct
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
+from Crypto.Util.Padding import pad
 
 
 def protect_firmware(infile, outfile, version, message):
@@ -26,16 +27,16 @@ def protect_firmware(infile, outfile, version, message):
         hmac = file.readline().rstrip()
         
     # Create cipher and hash    
-    cipher = AES.new(aes_key, AES.MODE_GCM, nonce = iv)
+    cipher = AES.new(aes_key, AES.MODE_CBC, iv=iv)
 
     # Encrypts firmware and digest it's MAC
-    enc_firmware, mac = cipher.encrypt_and_digest(firmware)
+    enc_firmware = cipher.encrypt(pad(firmware, AES.block_size))
     
     # Pack version and size into two little-endian shorts
     metadata = struct.pack('<HH', version, len(firmware))
 
     # Frame includes Metadata, Encrypted Firmware, MAC
-    frame = metadata + enc_firmware + mac
+    frame = metadata + enc_firmware
 
     # Generates HMAC of the frame
     hMAC = HMAC.new(hmac, msg=frame, digestmod=SHA256).digest()
