@@ -116,7 +116,6 @@ int main(int argc, char* argv[]){
             uart_write_str(UART1, "U"); 
             uart_write_str(UART2, "Updating..."); 
             load_firmware();
-            // bootloader is currently hanging here -> debug load_firmware
             uart_write_str(UART2, "Loaded new firmware.\n");
             nl(UART2);
             // Call decrypt_firmware() and pass in the AES key and IV
@@ -423,15 +422,16 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len) {
 void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     int result;
 
-    // for debugging purposes
+    /* for debugging purposes
     uart_write_str(UART2, "AES Key:");
     uart_write_str(UART2, (char*) aes_key);
     uart_write_str(UART2, "\nIV:");
     uart_write_str(UART2, (char*) iv);
-    uart_write_str(UART2, "\nMAC:");
+    uart_write_str(UART2, "\nMAC:");*/
 
     // performing AES-GCM decryption on the encrypted_data buffer
-    char decrypted_data[32768]; //assumes that decrypted data won't exceed the size of the encrypted data
+    // char decrypted_data[encrypted_size]; //assumes that decrypted data won't exceed the size of the encrypted data
+    // we don't need a new buffer i think - the function replaces the data in the original buffer?
 
     // find MAC tag from data
     char mac[16];
@@ -444,7 +444,9 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     uart_write_str(UART2, (char*) mac);
     uart_write_str(UART2, "\n");
 
-    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, decrypted_data, encrypted_size - 16, (char*)mac);
+    // error is still occurring here
+    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, NULL, NULL, mac);
+    // we aren't sending AAD in the beginning so the fields should theoretically just be blank
 
     // calculate size of decrypted data
     int decrypted_data_size = result == 1 ? encrypted_size - 16 : 0;
@@ -453,7 +455,7 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     } else {
         uart_write_str(UART2, "Firmware decryption failed or authentication failed\n");
     }
-    write_decrypt(decrypted_data, decrypted_data_size);
+    write_decrypt(encrypted_data, decrypted_data_size);
     
 
 }
