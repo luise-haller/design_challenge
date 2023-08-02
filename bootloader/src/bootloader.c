@@ -27,7 +27,7 @@ void load_firmware();
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
 void decrypt_firmware(uint8_t* aes_key, uint8_t* iv);
-void write_decrypt();
+void write_decrypt(char* decrypted_data, int decrypted_data_size);
 
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
@@ -65,12 +65,11 @@ int main(int argc, char* argv[]){
     // Check if enough command-line arguments are provided
     /*if (argc != 4) {
         // Print an error message and exit if secrets are missing
-
-        fprintf(stderr, "Usage: %s <aes> <iv> <hmac> \n", argv[0]);
+        uart_write_str(UART2, "Incorrect argument values, exiting now");
         return 1;
-    }*/
+        // not enough arguments being returned?
+    }*/ 
     
-
     // Copy the secrets from command-line arguments to local variables (arrays)
     uint8_t aes_key[17];
     uint8_t iv[17];
@@ -107,15 +106,22 @@ int main(int argc, char* argv[]){
     int resp;
     while (1){
         uint32_t instruction = uart_read(UART1, BLOCKING, &resp);
+        uart_write_str(UART2, "Instruction received: ");
+        uart_write(UART2, instruction);
+        nl(UART2);
+        uart_write_str(UART2, "Response received: ");
+        uart_write(UART2, (uint32_t) resp);
+        nl(UART2);
         if (instruction == UPDATE){
-            uart_write_str(UART1, "U");
+            // uart_write_str(UART1, "U"); (idk what the point of this is)
             load_firmware();
+            // bootloader is currently hanging here -> debug load_firmware
             uart_write_str(UART2, "Loaded new firmware.\n");
             nl(UART2);
             // Call decrypt_firmware() and pass in the AES key and IV
             decrypt_firmware(aes_key, iv);
         } else if (instruction == BOOT){
-            uart_write_str(UART1, "B");
+            // uart_write_str(UART1, "B"); (idk what the point of this is either)
             boot_firmware();
         }
     }
@@ -193,7 +199,7 @@ void load_initial_firmware(void){
 }
 
 /*
- * Load the firmware into flash.
+ * Load the encrypted firmware into a buffer
  */
 void load_firmware(){
     int frame_length = 0;
@@ -246,6 +252,7 @@ void load_firmware(){
     uint32_t metadata = ((size & 0xFFFF) << 16) | (version & 0xFFFF);
     program_flash(METADATA_BASE, (uint8_t *)(&metadata), 4);
     uart_write_str(UART2, "Metadata loaded");
+    nl(UART2);
 
     uart_write(UART1, OK); // Acknowledge the metadata.
 
@@ -257,6 +264,10 @@ void load_firmware(){
         frame_length = (int)rcv << 8;
         rcv = uart_read(UART1, BLOCKING, &read);
         frame_length += (int)rcv;
+
+        uart_write_str(UART2, "Frame Length read: ");
+        uart_write_hex(UART2, frame_length);
+        nl(UART2);
 
         // Get the number of bytes specified
         for (int i = 0; i < frame_length; ++i){
