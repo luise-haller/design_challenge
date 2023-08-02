@@ -278,8 +278,8 @@ void load_firmware(){
             data_counter += 1;
         } // for
 
-        // issue here (found with debugging statements)
         uart_write_str(UART2, "Encrypted Data Stored");
+        nl(UART2);
 
         // If we filed our page buffer, program it
         /*if (data_index == FLASH_PAGESIZE || frame_length == 0){
@@ -445,7 +445,7 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     uart_write_str(UART2, "\n");
 
     // error is still occurring here
-    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, NULL, NULL, mac);
+    result = gcm_decrypt_and_verify((char*)aes_key, (char*)iv, encrypted_data, encrypted_size, NULL, 0, mac);
     // we aren't sending AAD in the beginning so the fields should theoretically just be blank
 
     // calculate size of decrypted data
@@ -454,6 +454,9 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
         uart_write_str(UART2, "Firmware decryption successful\n");
     } else {
         uart_write_str(UART2, "Firmware decryption failed or authentication failed\n");
+    }
+    for (int i = 0; i < 16; i++) {
+        uart_write(UART2, encrypted_data[i]);
     }
     write_decrypt(encrypted_data, decrypted_data_size);
     
