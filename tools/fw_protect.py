@@ -29,7 +29,7 @@ def protect_firmware(infile, outfile, version, message):
     # Create cipher and hash    
     cipher = AES.new(aes_key, AES.MODE_CBC, iv=iv)
 
-    # Encrypts firmware and digest it's MAC
+    # Encrypts firmware 
     enc_firmware = cipher.encrypt(pad(firmware, AES.block_size))
     
     # Pack version and size into two little-endian shorts

@@ -434,16 +434,21 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     // we don't need a new buffer i think - the function replaces the data in the original buffer?
 
     // find MAC tag from data
-    char mac[16];
+    /*char mac[16];
     for (int i = 0; i < 16; i++) {
         mac[i] = encrypted_data[i+encrypted_size];
     }
     char aad[16];
     for (int i = 0; i < 16; i++) {
         aad[i] = rand();
-    }
+    }*/
     // uart_write_str(UART2, (char*) mac);
     // uart_write_str(UART2, "\n");
+    // pad data 
+    while (encrypted_size % 16 > 0) {
+        encrypted_size++;
+    }
+
 
     // error is still occurring here
     result = aes_decrypt((char*)aes_key, (char*)iv, encrypted_data, encrypted_size);
