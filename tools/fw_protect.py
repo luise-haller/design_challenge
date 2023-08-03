@@ -18,7 +18,6 @@ def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile
     with open(infile, 'rb') as fp:
         firmware = fp.read()
-        
 
     #Load keys from secret_build_output.txt
     with open("secret_build_output.txt", "rb") as file:

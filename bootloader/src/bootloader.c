@@ -58,7 +58,7 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len);
 unsigned char data[FLASH_PAGESIZE];
 
 // Encrypted Firmware Buffer and size of encrypted firmware
-char encrypted_data[32768];
+char data_buffer[32768];
 uint16_t encrypted_size;
 
 int main(int argc, char* argv[]){
@@ -71,15 +71,15 @@ int main(int argc, char* argv[]){
     }*/ 
     
     // Copy the secrets from command-line arguments to local variables (arrays)
-    uint8_t aes_key[16];
-    uint8_t iv[16];
-    char hmac_key[16];
+    uint8_t aes_key[17];
+    uint8_t iv[17];
+    //char hmac_key[16];
     strncpy((char*)aes_key, argv[1], 16);
     strncpy((char*)iv, argv[2], 16);
-    strncpy(hmac_key, argv[3], 16);
-    /*aes_key[16] = '\0'; // Null-terminate the strings
+    //strncpy(hmac_key, argv[3], 16);
+    aes_key[16] = '\0'; // Null-terminate the strings
     iv[16] = '\0';
-    hmac_key[16] = '\0';*/
+    //hmac_key[16] = '\0';
 
     // A 'reset' on UART0 will re-start this code at the top of main, won't clear flash, but will clean ram.
 
@@ -199,7 +199,7 @@ void load_initial_firmware(void){
 }
 
 /*
- * Load the encrypted firmware into a buffer
+ * Load the encrypted firmware into a buffer where it is stored and later decrypted
  */
 void load_firmware(){
     int frame_length = 0;
@@ -273,7 +273,7 @@ void load_firmware(){
         for (int i = 0; i < frame_length; ++i){
             char new_byte = uart_read(UART1, BLOCKING, &read);
             // data[data_index] = new_byte;
-            encrypted_data[data_counter] = new_byte;
+            data_buffer[data_counter] = new_byte;
             // data_index += 1;
             data_counter += 1;
         } // for
@@ -445,14 +445,24 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     // uart_write_str(UART2, (char*) mac);
     // uart_write_str(UART2, "\n");
     // pad data 
-    while (encrypted_size % 16 > 0) {
-        encrypted_size++;
+    int padded_size = encrypted_size;
+    while (padded_size % 16 > 0) {
+        padded_size++;
     }
 
-
     // error is still occurring here
-    result = aes_decrypt((char*)aes_key, (char*)iv, encrypted_data, encrypted_size);
+    result = aes_decrypt((char*)aes_key, (char*)iv, data_buffer, padded_size);
     // we aren't sending AAD in the beginning so the fields should theoretically just be blank
+
+    /*uart_write_str(UART2, "first 16 bytes of decrypted firmware:");
+    char testbytes[17];
+    for (int i = 0; i < 16; i++) {
+        testbytes[i] = encrypted_data[i];
+    }
+    testbytes[16] = '\0';
+    char dest[17];
+    memcpy(dest, testbytes, 17);
+    uart_write_str(UART2, dest);*/
 
     // calculate size of decrypted data (shouldn't it be the same as encrypted?)
     // int decrypted_data_size = result == 1 ? encrypted_size - 16 : 0;
@@ -461,16 +471,16 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     } else {
         uart_write_str(UART2, "Firmware decryption failed or authentication failed\n");
     }
-    write_decrypt(encrypted_data, encrypted_size);
+    write_decrypt(data_buffer, encrypted_size);
     
 }
 
 // Write decrypted data to flash (in progress)
 
-void write_decrypt(char* decrypted_data, int decrypted_data_size) {
+void write_decrypt(char* decrypted_data, int data_size) {
     uint32_t page_addr = FW_BASE;
     int data_index = 0;
-    int remaining_data = decrypted_data_size;
+    int remaining_data = data_size;
     char data_page[FLASH_PAGESIZE];
  
     while (remaining_data > 0) {
