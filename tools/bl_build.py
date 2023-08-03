@@ -33,6 +33,28 @@ def generate_secrets():
         file.write(aes_iv + b"\n")
         file.write(hmac_key + b"\n")
         # file.write(ecc_key + b"\n")
+        
+    with open(os.path.join(REPO_ROOT, "bootloader/src/skeys.h"), "w") as f:
+        f.write("#ifndef SKEYS_H")
+        f.write("\n")
+        f.write("#define SKEYS_H")
+        f.write("\n")
+        f.write("const uint8_t IV[16] = {")
+        for i in range (15):
+            f.write(hex(aes_iv[i]))
+            f.write(", ")
+        f.write(hex(aes_iv[15]))
+        f.write("};")
+        f.write("\n")
+        f.write("const uint8_t KEY[16] = {")
+        for i in range (15):
+            f.write(hex(aes_key[i]))
+            f.write(", ")
+        f.write(hex(aes_key[15]))
+        f.write("};")
+        f.write("\n")
+        f.write("#endif")
+        f.close()
 
 
 def copy_initial_firmware(binary_path: str):

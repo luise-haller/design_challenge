@@ -21,6 +21,8 @@
 // Application Imports
 #include "uart.h"
 
+#include "skeys.h"
+
 // Forward Declarations
 void load_initial_firmware(void);
 void load_firmware();
@@ -61,7 +63,7 @@ unsigned char data[FLASH_PAGESIZE];
 char data_buffer[32768];
 uint16_t encrypted_size;
 
-int main(int argc, char* argv[]){
+int main(){
     // Check if enough command-line arguments are provided
     /*if (argc != 4) {
         // Print an error message and exit if secrets are missing
@@ -71,15 +73,6 @@ int main(int argc, char* argv[]){
     }*/ 
     
     // Copy the secrets from command-line arguments to local variables (arrays)
-    uint8_t aes_key[17];
-    uint8_t iv[17];
-    //char hmac_key[16];
-    strncpy((char*)aes_key, argv[1], 16);
-    strncpy((char*)iv, argv[2], 16);
-    //strncpy(hmac_key, argv[3], 16);
-    aes_key[16] = '\0'; // Null-terminate the strings
-    iv[16] = '\0';
-    //hmac_key[16] = '\0';
 
     // A 'reset' on UART0 will re-start this code at the top of main, won't clear flash, but will clean ram.
 
@@ -119,7 +112,7 @@ int main(int argc, char* argv[]){
             uart_write_str(UART2, "Loaded new firmware.\n");
             nl(UART2);
             // Call decrypt_firmware() and pass in the AES key and IV
-            decrypt_firmware(aes_key, iv);
+            decrypt_firmware(KEY, IV);
         } else if (instruction == BOOT){
             uart_write_str(UART1, "Booting...");
             boot_firmware();
