@@ -23,9 +23,9 @@ def protect_firmware(infile, outfile, version, message):
     with open("secret_build_output.txt", "rb") as file:
         aes_key = file.readline().rstrip()
         iv = file.readline().rstrip()
-        hmac = file.readline().rstrip()
+        # hmac = file.readline().rstrip()
         
-    # Create cipher and hash    
+    # Create cipher   
     cipher = AES.new(aes_key, AES.MODE_CBC, iv=iv)
 
     # Encrypts firmware 
@@ -38,10 +38,10 @@ def protect_firmware(infile, outfile, version, message):
     frame = metadata + enc_firmware
 
     # Generates HMAC of the frame
-    hMAC = HMAC.new(hmac, msg=frame, digestmod=SHA256).digest()
+    # hMAC = HMAC.new(hmac, msg=frame, digestmod=SHA256).digest()
 
     # Frame + HMAC + Message + Null Byte
-    firmware_blob = frame + hMAC + message.encode() + b'\00'
+    firmware_blob = frame + message.encode() + b'\00'
 
 
     # Write final firmware to outfile

@@ -28,7 +28,7 @@ void load_initial_firmware(void);
 void load_firmware();
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
-void decrypt_firmware(uint8_t* aes_key, uint8_t* iv);
+void decrypt_firmware(const uint8_t* aes_key, const uint8_t* iv);
 void write_decrypt(char* decrypted_data, int decrypted_data_size);
 
 // Firmware Constants
@@ -412,7 +412,7 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len) {
 
 // Decrypts firmware and uses MAC key to verify the data has not been modified
 
-void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
+void decrypt_firmware(const uint8_t* aes_key, const uint8_t* iv) {
     int result;
 
     /* for debugging purposes
@@ -442,9 +442,13 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     while (padded_size % 16 > 0) {
         padded_size++;
     }
+    char decrypt_buffer[padded_size];
+    for (int i = 0; i < padded_size; i++) {
+        decrypt_buffer[i] = data_buffer[i];
+    }
 
     // error is still occurring here
-    result = aes_decrypt((char*)aes_key, (char*)iv, data_buffer, padded_size);
+    result = aes_decrypt((char*)aes_key, (char*)iv, decrypt_buffer, padded_size);
     // we aren't sending AAD in the beginning so the fields should theoretically just be blank
 
     /*uart_write_str(UART2, "first 16 bytes of decrypted firmware:");
@@ -464,7 +468,7 @@ void decrypt_firmware(uint8_t* aes_key, uint8_t* iv) {
     } else {
         uart_write_str(UART2, "Firmware decryption failed or authentication failed\n");
     }
-    write_decrypt(data_buffer, encrypted_size);
+    write_decrypt(decrypt_buffer, encrypted_size);
     
 }
 
