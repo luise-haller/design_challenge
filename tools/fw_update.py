@@ -32,7 +32,10 @@ from util import *
 RESP_OK = b"\x00"
 FRAME_SIZE = 256
 
-
+"""
+Sends metadata to the bootloader. Performs a handshake and wait for an ACK 
+response from the bootloader.
+"""
 def send_metadata(ser, metadata, debug=False):
 
     # Unpacks metadata (first 4 bytes) to extract version and size
@@ -62,7 +65,10 @@ def send_metadata(ser, metadata, debug=False):
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
 
-
+"""
+Sends a frame of data to bootloader over serial. Expects and ACK response from bootloader
+to confirm successful reception.
+"""
 def send_frame(ser, frame, debug=False):
     ser.write(frame)  # Write the frame to serial port
 
@@ -83,7 +89,9 @@ def send_frame(ser, frame, debug=False):
     if debug:
         print("Resp: {}".format(ord(resp)))
 
-
+"""
+Updated firmware of device via serial. 
+"""
 def update(ser, infile, debug):
     # Open serial port. Set baudrate to 115200. Set timeout to 2 seconds.
     # reads its content into firmware_blob
