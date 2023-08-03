@@ -43,12 +43,10 @@ def protect_firmware(infile, outfile, version, message):
     # Frame + HMAC + Message + Null Byte
     firmware_blob = frame + hMAC + message.encode() + b'\00'
 
-
     # Write final firmware to outfile
     with open(outfile, 'wb+') as outfile:
         outfile.write(firmware_blob)
 
-""" def verify_firmware(infile):
     # Load firmware bianry from infile
     with open(infile, 'rb') as fp:
         firmware_final = fp.read()
@@ -102,4 +100,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     protect_firmware(infile=args.infile, outfile=args.outfile, version=int(args.version), message=args.message)
-    # verify_firmware(infile=args.outfile)

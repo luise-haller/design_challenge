@@ -35,79 +35,98 @@ FRAME_SIZE = 256
 
 def send_metadata(ser, metadata, debug=False):
 
-    # Unpacks metada and prints
+    # Unpacks metadata (first 4 bytes) to extract version and size
     version, size = struct.unpack_from("<HH", metadata)
+    # Prints the version and size info extracted from the metadata
     print(f"Version: {version}\nSize: {size} bytes\n")
 
-    # Handshake for update
+    # Sends a handshake "U" to initiate the update process
     ser.write(b"U")
 
+    # Wait for the bootloader to enter update mode by receiving "U"
     print("Waiting for bootloader to enter update mode...")
     while ser.read(1).decode() != "U":
         print("got a byte") 
         pass
 
-    # Send size and version to bootloader.
+    # Sends the metadata to bootlodaer
     if debug:
         print(metadata)
 
     ser.write(metadata)
 
-    # Wait for an OK from the bootloader.
+    # Wait for a response (OK) from the bootloader to confirm successful receipt of the metadata
     resp = ser.read(1)
+    # Check if response from bootloader is not as expected
+    # If not, raises a RuntimeError
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
 
 
 def send_frame(ser, frame, debug=False):
-    ser.write(frame)  # Write the frame...
+    ser.write(frame)  # Write the frame to serial port
 
+    # If debug mode is enabled, print the hexadecimal representation of the frame
     if debug:
         print_hex(frame)
 
-    resp = ser.read(1)  # Wait for an OK from the bootloader
+    resp = ser.read(1)  # Wait for a response (OK) from the bootloader
 
-    time.sleep(0.1)
+    time.sleep(0.1) # Introduce a small delay to allow the bootloader to process the frame
 
+    # Check if the response from the bootloader is not the expected RESP_OK
+    # If not, raises a RuntimeError
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
 
+    # If debug mode is enabled, print the ASCII value of the response
     if debug:
         print("Resp: {}".format(ord(resp)))
 
 
 def update(ser, infile, debug):
     # Open serial port. Set baudrate to 115200. Set timeout to 2 seconds.
+    # reads its content into firmware_blob
     with open(infile, "rb") as fp:
         firmware_blob = fp.read()
 
+    # Extract first 4 bytes of the firmware_blob as metadata and the rest as the firmware data
     metadata = firmware_blob[:4]
     firmware = firmware_blob[4:]
 
+    # Send metadata to the serial port (ser)
     send_metadata(ser, metadata, debug=debug)
 
+    # Loop through the firmware data, diving it into frames and sending each frame to the serial port
     for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)):
+        # Extract chunk of data from firmware data
         data = firmware[frame_start : frame_start + FRAME_SIZE]
 
-        # Get length of data.
+        # Get length of data and construct the frame format
         length = len(data)
         frame_fmt = ">H{}s".format(length)
 
-        # Construct frame.
+        # Pack the length and data into a binary frame 
         frame = struct.pack(frame_fmt, length, data)
 
+        # Send frame to serial port
         send_frame(ser, frame, debug=debug)
+        # Print a message indicating that the frame has been written
         print(f"Wrote frame {idx} ({len(frame)} bytes)")
 
+    # Print message indicating that the firmware writing process is done
     print("Done writing firmware.")
 
-    # Send a zero length payload to tell the bootlader to finish writing it's page.
+    # Send a zero-length payload to the bootlader to signal the completion of writing the firmware page
     ser.write(struct.pack(">H", 0x0000))
     resp = ser.read(1)  # Wait for an OK from the bootloader
+    # If the response (OK) is not as expected, raise a RuntimeError
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded to zero length frame with {}".format(repr(resp)))
+    # Print message indicating that the zero-length frame has been written
     print(f"Wrote zero length frame (2 bytes)")
 
+    # Return the updated serial port object
     return ser
 
 
