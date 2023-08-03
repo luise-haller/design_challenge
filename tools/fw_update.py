@@ -34,6 +34,8 @@ FRAME_SIZE = 256
 
 
 def send_metadata(ser, metadata, debug=False):
+
+    # Unpacks metada and prints
     version, size = struct.unpack_from("<HH", metadata)
     print(f"Version: {version}\nSize: {size} bytes\n")
 
