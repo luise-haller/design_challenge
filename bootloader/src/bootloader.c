@@ -64,13 +64,6 @@ char data_buffer[32768];
 uint16_t encrypted_size;
 
 int main(){
-    // Check if enough command-line arguments are provided
-    /*if (argc != 4) {
-        // Print an error message and exit if secrets are missing
-        uart_write_str(UART2, "Incorrect argument values, exiting now");
-        return 1;
-        // not enough arguments being returned?
-    }*/ 
     
     // Copy the secrets from command-line arguments to local variables (arrays)
 
@@ -99,12 +92,7 @@ int main(){
     int resp;
     while (1){
         uint32_t instruction = uart_read(UART1, BLOCKING, &resp);
-        uart_write_str(UART2, "Instruction received: ");
-        uart_write(UART2, instruction);
         nl(UART2);
-        /*uart_write_str(UART2, "Response received: ");
-        uart_write(UART2, (uint32_t) resp);
-        nl(UART2);*/
         if (instruction == UPDATE){
             uart_write_str(UART1, "U"); 
             uart_write_str(UART2, "Updating..."); 
@@ -199,9 +187,7 @@ void load_firmware(){
     int read = 0;
     uint32_t rcv = 0;
 
-    //uint32_t data_index = 0;
     uint32_t data_counter = 0;
-    // uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
 
@@ -249,7 +235,7 @@ void load_firmware(){
 
     uart_write(UART1, OK); // Acknowledge the metadata.
 
-    /* Loop here until you can get all your characters and stuff */
+    // Loop until all frames have been received and data has successfully been stored
     while (1){
 
         // Get two bytes for the length.
@@ -262,64 +248,20 @@ void load_firmware(){
         uart_write_hex(UART2, frame_length);
         nl(UART2);
 
-        // Get the number of bytes specified
+        // Store the frame data into a global buffer
         for (int i = 0; i < frame_length; ++i){
             char new_byte = uart_read(UART1, BLOCKING, &read);
-            // data[data_index] = new_byte;
             data_buffer[data_counter] = new_byte;
-            // data_index += 1;
             data_counter += 1;
         }
 
-        uart_write_str(UART2, "Encrypted Data Stored");
         nl(UART2);
 
-        // If we filed our page buffer, program it
-        /*if (data_index == FLASH_PAGESIZE || frame_length == 0){
-
-            if(frame_length == 0){
-                uart_write_str(UART2, "Got zero length frame.\n");
-            }
-            
-            // Try to write flash and check for error
-            if (program_flash(page_addr, data, data_index)){
-                uart_write(UART1, ERROR); // Reject the firmware
-                SysCtlReset();            // Reset device
-                return;
-            }
-
-            // Verify flash program
-            if (memcmp(data, (void *) page_addr, data_index) != 0){
-                uart_write_str(UART2, "Flash check failed.\n");
-                uart_write(UART1, ERROR); // Reject the firmware
-                SysCtlReset();            // Reset device
-                return;
-            }
-
-            // Write debugging messages to UART2.
-            uart_write_str(UART2, "Page successfully programmed\nAddress: ");
-            uart_write_hex(UART2, page_addr);
-            uart_write_str(UART2, "\nBytes: ");
-            uart_write_hex(UART2, data_index);
-            nl(UART2);
-            
-
-            // Update to next page
-            page_addr += FLASH_PAGESIZE;
-            data_index = 0;
-
-            // If at end of firmware, go to main
-            if (frame_length == 0){
-                uart_write(UART1, OK);
-                break;
-            }
-        } */
         if(frame_length == 0){
                 uart_write_str(UART2, "Got zero length frame.\n");
                 uart_write(UART1, OK);
                 break;
         }
-        // data_index = 0;
 
         // If at end of firmware, go to main
 
@@ -415,29 +357,7 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len) {
 void decrypt_firmware(const uint8_t* aes_key, const uint8_t* iv) {
     int result;
 
-    /* for debugging purposes
-    uart_write_str(UART2, "AES Key:");
-    uart_write_str(UART2, (char*) aes_key);
-    uart_write_str(UART2, "\nIV:");
-    uart_write_str(UART2, (char*) iv);
-    uart_write_str(UART2, "\nMAC:");*/
-
-    // performing AES-GCM decryption on the encrypted_data buffer
-    // char decrypted_data[encrypted_size]; //assumes that decrypted data won't exceed the size of the encrypted data
-    // we don't need a new buffer i think - the function replaces the data in the original buffer?
-
-    // find MAC tag from data
-    /*char mac[16];
-    for (int i = 0; i < 16; i++) {
-        mac[i] = encrypted_data[i+encrypted_size];
-    }
-    char aad[16];
-    for (int i = 0; i < 16; i++) {
-        aad[i] = rand();
-    }*/
-    // uart_write_str(UART2, (char*) mac);
-    // uart_write_str(UART2, "\n");
-    // pad data 
+    // Create new buffer with the AES size
     int padded_size = encrypted_size;
     while (padded_size % 16 > 0) {
         padded_size++;
@@ -446,31 +366,16 @@ void decrypt_firmware(const uint8_t* aes_key, const uint8_t* iv) {
     for (int i = 0; i < padded_size; i++) {
         decrypt_buffer[i] = data_buffer[i];
     }
+
+    // Copy keys over with memcpy
     uint8_t aes_ke[16];
     memcpy(aes_ke, aes_key, 16);
     uint8_t ive[16];
     memcpy(ive, iv, 16);
-    // error is still occurring here
+
+    // Decrypt the data with AES-CBC mode
     result = aes_decrypt((char*)aes_ke, (char*)ive, decrypt_buffer, padded_size);
-    // we aren't sending AAD in the beginning so the fields should theoretically just be blank
 
-    /*uart_write_str(UART2, "first 16 bytes of decrypted firmware:");
-    char testbytes[17];
-    for (int i = 0; i < 16; i++) {
-        testbytes[i] = encrypted_data[i];
-    }
-    testbytes[16] = '\0';
-    char dest[17];
-    memcpy(dest, testbytes, 17);
-    uart_write_str(UART2, dest);*/
-
-    // calculate size of decrypted data (shouldn't it be the same as encrypted?)
-    // int decrypted_data_size = result == 1 ? encrypted_size - 16 : 0;
-    if (result == 1) {
-        uart_write_str(UART2, "Firmware decryption successful\n");
-    } else {
-        uart_write_str(UART2, "Firmware decryption failed or authentication failed\n");
-    }
     write_decrypt(decrypt_buffer, encrypted_size);
     
 }
@@ -510,7 +415,5 @@ void write_decrypt(char* decrypted_data, int data_size) {
         data_index += bytes_to_write; // Move to the next position in the decrypted_data 
         remaining_data -= bytes_to_write; // Decrement the remaining data counter
     }
-    // Print a message or send a response indicating successful firmware write
-    uart_write_str(UART2, "Firmware decryption and write completed successfully.\n");
     uart_write(UART1, OK); // Sends achknowlegment signal to host
 }
