@@ -376,7 +376,11 @@ void decrypt_firmware(const uint8_t* aes_key, const uint8_t* iv) {
     // Decrypt the data with AES-CBC mode
     result = aes_decrypt((char*)aes_ke, (char*)ive, decrypt_buffer, padded_size);
 
-    write_decrypt(decrypt_buffer, encrypted_size);
+    for (int i = 0; i < padded_size; i++) {
+        data_buffer[i] = decrypt_buffer[i];
+    }
+
+    write_decrypt(data_buffer, encrypted_size);
     
 }
 
