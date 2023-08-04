@@ -446,9 +446,12 @@ void decrypt_firmware(const uint8_t* aes_key, const uint8_t* iv) {
     for (int i = 0; i < padded_size; i++) {
         decrypt_buffer[i] = data_buffer[i];
     }
-
+    uint8_t aes_ke[16];
+    memcpy(aes_ke, aes_key, 16);
+    uint8_t ive[16];
+    memcpy(ive, iv, 16);
     // error is still occurring here
-    result = aes_decrypt((char*)aes_key, (char*)iv, decrypt_buffer, padded_size);
+    result = aes_decrypt((char*)aes_ke, (char*)ive, decrypt_buffer, padded_size);
     // we aren't sending AAD in the beginning so the fields should theoretically just be blank
 
     /*uart_write_str(UART2, "first 16 bytes of decrypted firmware:");

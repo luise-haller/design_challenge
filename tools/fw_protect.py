@@ -47,7 +47,7 @@ def protect_firmware(infile, outfile, version, message):
     with open(outfile, 'wb+') as outfile:
         outfile.write(firmware_blob)
 
-    # Load firmware bianry from infile
+    """# Load firmware bianry from infile
     with open(infile, 'rb') as fp:
         firmware_final = fp.read()
 
@@ -83,9 +83,9 @@ def protect_firmware(infile, outfile, version, message):
 
     # Recalculate HMAC tag
     hmac_generate = HMAC.new(hmac_key, msg=decrypted_firmware, digestmod=SHA256)
-    recalculated_hmac_tag = hmac_generate.digest()
+    recalculated_hmac_tag = hmac_generate.digest()"""
 
-    # compare the calculated values with the extracted ones to verify firmware
+    """# compare the calculated values with the extracted ones to verify firmware
     if og_hash == recalculated_og_hash and encrypted_hash == recalculated_encrypted_hash and hmac_tag == recalculated_hmac_tag:
         print("Firmware integrity verified")
     else:
