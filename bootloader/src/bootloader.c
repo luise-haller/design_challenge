@@ -269,7 +269,7 @@ void load_firmware(){
             data_buffer[data_counter] = new_byte;
             // data_index += 1;
             data_counter += 1;
-        } // for
+        }
 
         uart_write_str(UART2, "Encrypted Data Stored");
         nl(UART2);
@@ -313,7 +313,7 @@ void load_firmware(){
                 uart_write(UART1, OK);
                 break;
             }
-        } // if */
+        } */
         if(frame_length == 0){
                 uart_write_str(UART2, "Got zero length frame.\n");
                 uart_write(UART1, OK);
@@ -473,14 +473,15 @@ void decrypt_firmware(const uint8_t* aes_key, const uint8_t* iv) {
 }
 
 // Write decrypted data to flash (in progress)
-
 void write_decrypt(char* decrypted_data, int data_size) {
-    uint32_t page_addr = FW_BASE;
-    int data_index = 0;
-    int remaining_data = data_size;
-    char data_page[FLASH_PAGESIZE];
+    uint32_t page_addr = FW_BASE;  
+    int data_index = 0; // Index for tracking the current position in the decrypted_data
+    int remaining_data = data_size; // Counter for remaining data to be written to flash
+    char data_page[FLASH_PAGESIZE]; // Temporary buffer for a single page of flash memory
  
+    // Loop until all data is written to flash
     while (remaining_data > 0) {
+        // Calculate the number of bytes to write in this iteration (limited by FLASH_PAGESIZE)
         int bytes_to_write = remaining_data > FLASH_PAGESIZE ? FLASH_PAGESIZE : remaining_data;
 
         // Copy decrypted data to a temporary buffer for Flash programming
@@ -488,25 +489,25 @@ void write_decrypt(char* decrypted_data, int data_size) {
 
         // Try to write flash and check for error
         if (program_flash(page_addr, (unsigned char*)data_page, bytes_to_write) != 0) {
-            uart_write(UART1, 0x10); // Reject the firmware
+            uart_write(UART1, 0x10);  // Reject the firmware
             SysCtlReset();            // Reset device
             return;
         }
 
-        // Verify flash program
-            if (memcmp(data_page, (void *) page_addr, bytes_to_write) != 0) {
-                uart_write_str(UART2, "Flash check failed.\n");
-                uart_write(UART1, 0x11); // Reject the firmware
-                SysCtlReset();            // Reset device
-                return;
-            }
+        // Verify flash program by comparing the data_page with the data in flash
+        if (memcmp(data_page, (void *) page_addr, bytes_to_write) != 0) {
+            uart_write_str(UART2, "Flash check failed.\n"); // Notify UART2 about the failure 
+            uart_write(UART1, 0x11);  // Send a rejection signal to the host
+            SysCtlReset();            // Reset device to recover from the error
+            return;
+        }
 
-        // Update vars for next iteration
-        page_addr += FLASH_PAGESIZE;
-        data_index += bytes_to_write;
-        remaining_data -= bytes_to_write;
+        // Update variables for the next iteration
+        page_addr += FLASH_PAGESIZE; // Move to the next page in flash
+        data_index += bytes_to_write; // Move to the next position in the decrypted_data 
+        remaining_data -= bytes_to_write; // Decrement the remaining data counter
     }
     // Print a message or send a response indicating successful firmware write
     uart_write_str(UART2, "Firmware decryption and write completed successfully.\n");
-    uart_write(UART1, OK);
+    uart_write(UART1, OK); // Sends achknowlegment signal to host
 }
