@@ -34,13 +34,10 @@ def protect_firmware(infile, outfile, version, message):
     # Pack version and size into two little-endian shorts
     metadata = struct.pack('<HH', version, len(firmware))
 
-    # Frame includes Metadata, Encrypted Firmware, MAC
+    # Frame includes Metadata, Encrypted Firmware
     frame = metadata + enc_firmware
 
-    # Generates HMAC of the frame
-    # hMAC = HMAC.new(hmac, msg=frame, digestmod=SHA256).digest()
-
-    # Frame + HMAC + Message + Null Byte
+    # Frame + Message + Null Byte
     firmware_blob = frame + message.encode() + b'\00'
 
     # Write final firmware to outfile
